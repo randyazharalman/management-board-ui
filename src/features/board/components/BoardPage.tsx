@@ -6,6 +6,7 @@ import { useKanbanStore } from "../../../store/kanbanStore";
 import { Task } from "../../../types";
 import { useToast } from "../../../shared/components/ToastProvider";
 import { IconMoon, IconPlus, IconSearch, IconSun, IconX } from "shared/icons";
+import { IonContent, IonPage } from "@ionic/react";
 
 interface DeleteColDialogProps {
   columnTitle: string;
@@ -180,198 +181,202 @@ export const BoardPage: React.FC = () => {
 
   return (
     <>
-      {/* HEADER  */}
-      <header className="kb-header">
-        <a
-          className="kb-header__logo"
-          href="#"
-          onClick={(e) => e.preventDefault()}
-        >
-          <span className="kb-header__logo-icon">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-            >
-              <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2" />
-            </svg>
-          </span>
-          <span className="kb-header__logo-text">Adhivasindo</span>
-          <span className="kb-header__logo-dot" />
-        </a>
-
-        <span className="kb-header__sep" />
-
-        {/* Board info */}
-        <div className="kb-header__board-info">
-          <span className="kb-header__board-name">Northern Light</span>
-          <span className="kb-header__board-meta">
-            {totalTasks} tasks · {columns.length} columns
-          </span>
-        </div>
-
-        {/* Actions */}
-        <div className="kb-header__actions">
-          <div className="kb-avatars" style={{ marginRight: 4 }}>
-            {members.map((m) => (
-              <div
-                key={m.id}
-                className="kb-avatar kb-avatar--md"
-                style={{ background: m.color }}
-                title={m.name}
+      <IonPage>
+        {/* HEADER  */}
+        <header className="kb-header">
+          <a
+            className="kb-header__logo"
+            href="#"
+            onClick={(e) => e.preventDefault()}
+          >
+            <span className="kb-header__logo-icon">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
               >
-                {m.avatar}
+                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2" />
+              </svg>
+            </span>
+            <span className="kb-header__logo-text">Adhivasindo</span>
+            <span className="kb-header__logo-dot" />
+          </a>
+
+          <span className="kb-header__sep" />
+
+          {/* Board info */}
+          <div className="kb-header__board-info">
+            <span className="kb-header__board-name">Northern Light</span>
+            <span className="kb-header__board-meta">
+              {totalTasks} tasks · {columns.length} columns
+            </span>
+          </div>
+
+          {/* Actions */}
+          <div className="kb-header__actions">
+            <div className="kb-avatars" style={{ marginRight: 4 }}>
+              {members.map((m) => (
+                <div
+                  key={m.id}
+                  className="kb-avatar kb-avatar--md"
+                  style={{ background: m.color }}
+                  title={m.name}
+                >
+                  {m.avatar}
+                </div>
+              ))}
+              <div
+                className="kb-avatar kb-avatar--md"
+                style={{ background: "skyblue" }}
+                title={"Invite"}
+              >
+                <IconPlus />
               </div>
-            ))}
-            <div
-              className="kb-avatar kb-avatar--md"
-              style={{ background: "skyblue" }}
-              title={"Invite"}
+            </div>
+            <div className="kb-header-search">
+              <IconSearch />
+              <input
+                placeholder="Search tasks..."
+                value={filter.search}
+                onChange={(e) => setFilter({ search: e.target.value })}
+              />
+              {filter.search && (
+                <button
+                  className="kb-header-search__clear"
+                  onClick={() => setFilter({ search: "" })}
+                  title="Clear search"
+                >
+                  <IconX />
+                </button>
+              )}
+            </div>
+
+            {/* New Task */}
+            <button
+              className="kb-btn kb-btn-primary"
+              style={{ fontSize: 12, padding: "7px 14px", gap: 6 }}
+              onClick={() => openCreateModal(sortedColumns[0]?.id ?? "")}
             >
               <IconPlus />
-            </div>
+              <span className="kb-header__btn-text">New Task</span>
+            </button>
+
+            {/* Dark mode */}
+            <button
+              className="kb-dark-toggle"
+              onClick={toggleDarkMode}
+              title="Toggle theme"
+            >
+              {darkMode ? <IconSun /> : <IconMoon />}
+              <span className="kb-dark-toggle__text">
+                {darkMode ? "Light" : "Dark"}
+              </span>
+            </button>
           </div>
-          <div className="kb-header-search">
-            <IconSearch />
-            <input
-              placeholder="Search tasks..."
-              value={filter.search}
-              onChange={(e) => setFilter({ search: e.target.value })}
-            />
-            {filter.search && (
+        </header>
+
+        {/* FILTER */}
+        <FilterBar
+          filter={filter}
+          members={members}
+          onFilterChange={setFilter}
+          onClear={clearFilter}
+        />
+
+        {/* BOARD  */}
+        <IonContent scrollX>
+          <div className="kb-board">
+            {sortedColumns.map((col) => (
+              <BoardColumn
+                key={col.id}
+                column={col}
+                tasks={getTasksByColumn(col.id)}
+                members={members}
+                onAddTask={openCreateModal}
+                onEditTask={openEditModal}
+                onDrop={handleDrop}
+                onRenameColumn={handleStartRename}
+                onDeleteColumn={(id) => setDeleteColId(id)}
+                editingColId={editingColId}
+                editingColName={editingColName}
+                onEditingColNameChange={setEditingColName}
+                onConfirmRename={handleConfirmRename}
+                onCancelRename={() => setEditingColId(null)}
+              />
+            ))}
+
+            {/* ADD COLUMN  */}
+            {showAddCol ? (
+              <div className="kb-add-column-form">
+                <input
+                  className="kb-form-input"
+                  placeholder="Column name..."
+                  value={newColName}
+                  onChange={(e) => setNewColName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleAddColumn();
+                    if (e.key === "Escape") setShowAddCol(false);
+                  }}
+                  autoFocus
+                  style={{ fontSize: 13 }}
+                />
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  <button
+                    className="kb-btn kb-btn-primary"
+                    style={{ flex: 1, justifyContent: "center", fontSize: 12 }}
+                    onClick={handleAddColumn}
+                  >
+                    Add Column
+                  </button>
+                  <button
+                    className="kb-btn kb-btn-ghost"
+                    style={{ fontSize: 12 }}
+                    onClick={() => setShowAddCol(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
               <button
-                className="kb-header-search__clear"
-                onClick={() => setFilter({ search: "" })}
-                title="Clear search"
+                className="kb-add-column"
+                onClick={() => setShowAddCol(true)}
+                aria-label="Add new column"
               >
-                <IconX />
+                <span className="kb-add-column__icon">
+                  <IconPlus />
+                </span>
+                Add List
               </button>
             )}
           </div>
+        </IonContent>
 
-          {/* New Task */}
-          <button
-            className="kb-btn kb-btn-primary"
-            style={{ fontSize: 12, padding: "7px 14px", gap: 6 }}
-            onClick={() => openCreateModal(sortedColumns[0]?.id ?? "")}
-          >
-            <IconPlus />
-            <span className="kb-header__btn-text">New Task</span>
-          </button>
-
-          {/* Dark mode */}
-          <button
-            className="kb-dark-toggle"
-            onClick={toggleDarkMode}
-            title="Toggle theme"
-          >
-            {darkMode ? <IconSun /> : <IconMoon />}
-            <span className="kb-dark-toggle__text">
-              {darkMode ? "Light" : "Dark"}
-            </span>
-          </button>
-        </div>
-      </header>
-
-      {/* FILTER */}
-      <FilterBar
-        filter={filter}
-        members={members}
-        onFilterChange={setFilter}
-        onClear={clearFilter}
-      />
-
-      {/* BOARD  */}
-      <div className="kb-board">
-        {sortedColumns.map((col) => (
-          <BoardColumn
-            key={col.id}
-            column={col}
-            tasks={getTasksByColumn(col.id)}
+        {/* TASK MODAL */}
+        {modalState.open && (
+          <TaskModal
+            task={modalState.task}
+            columnId={modalState.columnId}
             members={members}
-            onAddTask={openCreateModal}
-            onEditTask={openEditModal}
-            onDrop={handleDrop}
-            onRenameColumn={handleStartRename}
-            onDeleteColumn={(id) => setDeleteColId(id)}
-            editingColId={editingColId}
-            editingColName={editingColName}
-            onEditingColNameChange={setEditingColName}
-            onConfirmRename={handleConfirmRename}
-            onCancelRename={() => setEditingColId(null)}
+            onClose={closeModal}
+            onSave={handleSave}
+            onDelete={modalState.task ? handleDeleteTask : undefined}
           />
-        ))}
-
-        {/* ADD COLUMN  */}
-        {showAddCol ? (
-          <div className="kb-add-column-form">
-            <input
-              className="kb-form-input"
-              placeholder="Column name..."
-              value={newColName}
-              onChange={(e) => setNewColName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleAddColumn();
-                if (e.key === "Escape") setShowAddCol(false);
-              }}
-              autoFocus
-              style={{ fontSize: 13 }}
-            />
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button
-                className="kb-btn kb-btn-primary"
-                style={{ flex: 1, justifyContent: "center", fontSize: 12 }}
-                onClick={handleAddColumn}
-              >
-                Add Column
-              </button>
-              <button
-                className="kb-btn kb-btn-ghost"
-                style={{ fontSize: 12 }}
-                onClick={() => setShowAddCol(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            className="kb-add-column"
-            onClick={() => setShowAddCol(true)}
-            aria-label="Add new column"
-          >
-            <span className="kb-add-column__icon">
-              <IconPlus />
-            </span>
-            Add List
-          </button>
         )}
-      </div>
 
-      {/* TASK MODAL */}
-      {modalState.open && (
-        <TaskModal
-          task={modalState.task}
-          columnId={modalState.columnId}
-          members={members}
-          onClose={closeModal}
-          onSave={handleSave}
-          onDelete={modalState.task ? handleDeleteTask : undefined}
-        />
-      )}
-
-      {/* DELETE CONFIRM DIALOG */}
-      {deleteColId && (
-        <DeleteColDialog
-          columnTitle={deleteColTitle}
-          taskCount={deleteColTaskCount}
-          onConfirm={handleConfirmDelete}
-          onCancel={() => setDeleteColId(null)}
-        />
-      )}
+        {/* DELETE CONFIRM DIALOG */}
+        {deleteColId && (
+          <DeleteColDialog
+            columnTitle={deleteColTitle}
+            taskCount={deleteColTaskCount}
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setDeleteColId(null)}
+          />
+        )}
+      </IonPage>
     </>
   );
 };
